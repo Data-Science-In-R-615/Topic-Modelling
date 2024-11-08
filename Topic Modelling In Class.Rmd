@@ -1,0 +1,107 @@
+---
+title: "Topic Modelling In Class"
+author: "Vajinder"
+date: "2024-11-01"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r, echo=FALSE, warning=FALSE}
+library(topicmodels)
+library(tidytext)
+library(lexicon)
+library(factoextra)
+library(dplyr)
+library(tidytext)
+library(tidyr)
+library(ldatuning)
+
+#30 topics, tune the K parameter
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r }
+movie <- read.csv("movie_plots.csv")
+genres <- read.csv("movie_plots_with_genres.csv")
+```
+
+
+```{r }
+movie <- movie |>
+  unnest_tokens(word, Plot)
+
+data("stop_words")
+
+movie <- movie |>
+  anti_join(stop_words, by = "word")
+```
+
+
+```{r }
+dtm <- movie |>
+  count(Movie.Name, word) |>
+  cast_dtm(Movie.Name, word, n)
+
+dtm
+```
+
+
+```{r }
+lda <- LDA(dtm, k = 30, control = list(seed = 1234))
+
+top_terms <- terms(lda, 10)  
+top_terms
+
+```
+
+LDA with 30 topics
+plot_lda <- LDA(plot_dtm, k = 30, control = list(seed = 1066))
+beta - words per topics
+#retrieving gammas
+gamma - topics per documents
+plot_ga,,a <- tidy(plots_lda, matrix = "gamma")
+cluster ( how similar movies are based on the genre)
+multinomial extension of beta distribution - drichlet distribution
+```{r}
+betas <- tidy(lda, matrix = "beta")
+gammas <- tidy(lda, matrix = "gamma")
+betas <- betas |>  pivot_wider(names_from = topic, values_from = beta)
+gammas <- gammas |>  pivot_wider(names_from = topic, values_from = gamma)
+```
+
+
+```{r}
+cluster <- kmeans(gammas |> select(-document), centers = 10)
+
+fviz_cluster(cluster, data = gammas |> select(-document))
+```
+
+
+```{r}
+clusters <- cluster[["cluster"]]
+gammas$cluster <- clusters
+
+#cluster1
+
+plot_cluster1 <- gammas |> filter(cluster ==  1)
+cluster1_names <- plot_cluster1$document
+cluster1 <- genres |> filter(Movie.Name%in%cluster1_names)
+cluster1_counts <- cluster1 |> group_by(Genre) |> summarize(n = n())
+
+```
+
+#pivoting 
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
