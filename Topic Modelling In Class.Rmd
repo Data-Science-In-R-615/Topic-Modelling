@@ -59,10 +59,9 @@ dtm
 
 
 ```{r }
-lda <- LDA(dtm, k = 30, control = list(seed = 1234))
+lda <- LDA(dtm, k = 20, control = list(seed = 1234))
 
 top_terms <- terms(lda, 10)  
-top_terms
 
 ```
 
@@ -99,9 +98,78 @@ plot_cluster1 <- gammas |> filter(cluster ==  1)
 cluster1_names <- plot_cluster1$document
 cluster1 <- genres |> filter(Movie.Name%in%cluster1_names)
 cluster1_counts <- cluster1 |> group_by(Genre) |> summarize(n = n())
-
 ```
 
-#pivoting 
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+plot_cluster2 <- gammas |> filter(cluster ==  2)
+cluster2_names <- plot_cluster2$document
+cluster2 <- genres |> filter(Movie.Name%in%cluster2_names)
+cluster2_counts <- cluster2 |> group_by(Genre) |> summarize(n = n())
+```
+
+
+```{r}
+plot_cluster3 <- gammas |> filter(cluster ==  3)
+cluster3_names <- plot_cluster3$document
+cluster3 <- genres |> filter(Movie.Name%in%cluster3_names)
+cluster3_counts <- cluster3 |> group_by(Genre) |> summarize(n = n())
+```
+
+
+```{r}
+plot_cluster4 <- gammas |> filter(cluster ==  4)
+cluster4_names <- plot_cluster4$document
+cluster4 <- genres |> filter(Movie.Name%in%cluster4_names)
+cluster4_counts <- cluster4 |> group_by(Genre) |> summarize(n = n())
+```
+
+
+```{r}
+plot_cluster5 <- gammas |> filter(cluster ==  5)
+cluster5_names <- plot_cluster5$document
+cluster5 <- genres |> filter(Movie.Name%in%cluster5_names)
+cluster5_counts <- cluster5 |> group_by(Genre) |> summarize(n = n())
+```
+
+
+```{r}
+plot_cluster6 <- gammas |> filter(cluster ==  6)
+cluster6_names <- plot_cluster6$document
+cluster6 <- genres |> filter(Movie.Name%in%cluster6_names)
+cluster6_counts <- cluster6 |> group_by(Genre) |> summarize(n = n())
+```
+
+
+```{r}
+plot_cluster7 <- gammas |> filter(cluster ==  7)
+cluster7_names <- plot_cluster7$document
+cluster7 <- genres |> filter(Movie.Name%in%cluster7_names)
+cluster7_counts <- cluster7 |> group_by(Genre) |> summarize(n = n())
+```
+
+
+```{r}
+plot_cluster8 <- gammas |> filter(cluster ==  8)
+cluster8_names <- plot_cluster8$document
+cluster8 <- genres |> filter(Movie.Name%in%cluster8_names)
+cluster8_counts <- cluster8 |> group_by(Genre) |> summarize(n = n())
+```
+
+
+```{r}
+plot_cluster9 <- gammas |> filter(cluster ==  9)
+cluster9_names <- plot_cluster9$document
+cluster9 <- genres |> filter(Movie.Name%in%cluster9_names)
+cluster9_counts <- cluster9 |> group_by(Genre) |> summarize(n = n())
+```
+
+
+```{r}
+plot_cluster10 <- gammas |> filter(cluster ==  10)
+cluster10_names <- plot_cluster10$document
+cluster10 <- genres |> filter(Movie.Name%in%cluster10_names)
+cluster10_counts <- cluster10 |> group_by(Genre) |> summarize(n = n())
+```
+
+
