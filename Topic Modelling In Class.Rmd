@@ -16,14 +16,12 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
 ```{r, echo=FALSE, warning=FALSE}
+library(tidyverse)
 library(topicmodels)
 library(tidytext)
 library(lexicon)
 library(factoextra)
-library(dplyr)
-library(tidytext)
-library(tidyr)
-library(ldatuning)
+library(wordcloud)
 
 #30 topics, tune the K parameter
 ```
@@ -34,24 +32,27 @@ You can also embed plots, for example:
 
 ```{r }
 movie <- read.csv("movie_plots.csv")
-genres <- read.csv("movie_plots_with_genres.csv")
+movies_genre <- read.csv("movie_plots_with_genres.csv")
 ```
 
 
 ```{r }
-movie <- movie |>
-  unnest_tokens(word, Plot)
+plots <- movies_genre |> unnest_tokens(word,Plot)
+plot_word_counts <- plots |>  
+  anti_join(stop_words) |> 
+  count(Movie.Name, word, sort=TRUE)
 
-data("stop_words")
+data("freq_first_names")
 
-movie <- movie |>
-  anti_join(stop_words, by = "word")
+first_names <- tolower(freq_first_names$Name)
+plot_word_counts <- plot_word_counts |> 
+  filter(!(word %in% first_names))
 ```
 
 
 ```{r }
-dtm <- movie |>
-  count(Movie.Name, word) |>
+
+dtm <- plot_word_counts |>  
   cast_dtm(Movie.Name, word, n)
 
 dtm
@@ -70,106 +71,96 @@ plot_lda <- LDA(plot_dtm, k = 30, control = list(seed = 1066))
 beta - words per topics
 #retrieving gammas
 gamma - topics per documents
-plot_ga,,a <- tidy(plots_lda, matrix = "gamma")
+Notes taken during the class : (plot_ga,,a <- tidy(plots_lda, matrix = "gamma")
 cluster ( how similar movies are based on the genre)
-multinomial extension of beta distribution - drichlet distribution
+multinomial extension of beta distribution - drichlet distribution)
+
 ```{r}
 betas <- tidy(lda, matrix = "beta")
 gammas <- tidy(lda, matrix = "gamma")
-betas <- betas |>  pivot_wider(names_from = topic, values_from = beta)
 gammas <- gammas |>  pivot_wider(names_from = topic, values_from = gamma)
 ```
 
+Take highest gamma for each movie to get the top movie by topic
 
 ```{r}
-cluster <- kmeans(gammas |> select(-document), centers = 10)
+top_movies <- gammas |>
+  pivot_longer(cols = `1`:`20`, names_to = "topic", values_to = "gamma") |> 
+  group_by(document) |>  
+  slice_max(gamma, n = 1) |>  
+  ungroup() |>
+  select(document, topic, gamma)  
+```
 
+But do get a more detailed look, we need to cluster the movies into 10 clusters by topic
+```{r}
+library(dplyr)
+cluster <- kmeans(gammas |>  select(-document),10)
 fviz_cluster(cluster, data = gammas |> select(-document))
-```
-
-
-```{r}
+movies_genre <- movies_genre |>
+  distinct(Movie.Name, .keep_all = TRUE)
 clusters <- cluster[["cluster"]]
-gammas$cluster <- clusters
-
-#cluster1
-
-plot_cluster1 <- gammas |> filter(cluster ==  1)
-cluster1_names <- plot_cluster1$document
-cluster1 <- genres |> filter(Movie.Name%in%cluster1_names)
-cluster1_counts <- cluster1 |> group_by(Genre) |> summarize(n = n())
+cluster$cluster <- clusters
+movies_genre$cluster <- clusters
 ```
 
-
+Creating clusters
 ```{r}
-plot_cluster2 <- gammas |> filter(cluster ==  2)
-cluster2_names <- plot_cluster2$document
-cluster2 <- genres |> filter(Movie.Name%in%cluster2_names)
-cluster2_counts <- cluster2 |> group_by(Genre) |> summarize(n = n())
+gammas <- gammas |>
+  left_join(movies_genre |> select(Movie.Name, cluster), by = c("document" = "Movie.Name"))
+cluster_1 <- gammas |> filter(cluster == 1)
+cluster_2 <- gammas |> filter(cluster == 2)
+cluster_3 <- gammas |> filter(cluster == 3)
+cluster_4 <- gammas |> filter(cluster == 4)
+cluster_5 <- gammas |> filter(cluster == 5)
+cluster_6 <- gammas |> filter(cluster == 6)
+cluster_7 <- gammas |> filter(cluster == 7)
+cluster_8 <- gammas |> filter(cluster == 8)
+cluster_9 <- gammas |> filter(cluster == 9)
+cluster_10 <- gammas |> filter(cluster == 10)
 ```
 
 
+Find which topic is most associated with each cluster
 ```{r}
-plot_cluster3 <- gammas |> filter(cluster ==  3)
-cluster3_names <- plot_cluster3$document
-cluster3 <- genres |> filter(Movie.Name%in%cluster3_names)
-cluster3_counts <- cluster3 |> group_by(Genre) |> summarize(n = n())
+col_avg <- function(df) {
+  selected_columns <- df |>
+    select(`1`:`20`)
+  
+  column_averages <- colMeans(selected_columns, na.rm = TRUE)
+  
+  return(column_averages)
+}
+averages_cluster_5 <- col_avg(cluster_5)
+print(averages_cluster_5)
 ```
+All of these probablities are pretty small numbers except 3,6, 7, 8 and 20 indicating cluster 5 is most associated with these three topics. 
 
-
+Make word clouds
 ```{r}
-plot_cluster4 <- gammas |> filter(cluster ==  4)
-cluster4_names <- plot_cluster4$document
-cluster4 <- genres |> filter(Movie.Name%in%cluster4_names)
-cluster4_counts <- cluster4 |> group_by(Genre) |> summarize(n = n())
+wordcloud <- function(topic_number) {
+  top_words <- betas |>
+    filter(topic == topic_number) |>
+    top_n(30, beta) |>   
+    arrange(desc(beta))
+  
+  wordcloud::wordcloud(words = top_words$term, 
+            freq = top_words$beta, 
+            min.freq = 0, 
+            scale = c(3, 0.5),   
+            random.order = FALSE, 
+            colors = brewer.pal(8, "Dark2"))
+}
+top_terms <- terms(lda, 10)
+avg_9 <- col_avg(cluster_9)
+print(avg_9)
 ```
 
-
+Lets make some fun word clouds
 ```{r}
-plot_cluster5 <- gammas |> filter(cluster ==  5)
-cluster5_names <- plot_cluster5$document
-cluster5 <- genres |> filter(Movie.Name%in%cluster5_names)
-cluster5_counts <- cluster5 |> group_by(Genre) |> summarize(n = n())
+wordcloud(1)
+wordcloud(2)
+wordcloud(3)
 ```
 
-
-```{r}
-plot_cluster6 <- gammas |> filter(cluster ==  6)
-cluster6_names <- plot_cluster6$document
-cluster6 <- genres |> filter(Movie.Name%in%cluster6_names)
-cluster6_counts <- cluster6 |> group_by(Genre) |> summarize(n = n())
-```
-
-
-```{r}
-plot_cluster7 <- gammas |> filter(cluster ==  7)
-cluster7_names <- plot_cluster7$document
-cluster7 <- genres |> filter(Movie.Name%in%cluster7_names)
-cluster7_counts <- cluster7 |> group_by(Genre) |> summarize(n = n())
-```
-
-
-```{r}
-plot_cluster8 <- gammas |> filter(cluster ==  8)
-cluster8_names <- plot_cluster8$document
-cluster8 <- genres |> filter(Movie.Name%in%cluster8_names)
-cluster8_counts <- cluster8 |> group_by(Genre) |> summarize(n = n())
-```
-
-
-```{r}
-plot_cluster9 <- gammas |> filter(cluster ==  9)
-cluster9_names <- plot_cluster9$document
-cluster9 <- genres |> filter(Movie.Name%in%cluster9_names)
-cluster9_counts <- cluster9 |> group_by(Genre) |> summarize(n = n())
-```
-
-
-```{r}
-plot_cluster10 <- gammas |> filter(cluster ==  10)
-cluster10_names <- plot_cluster10$document
-cluster10 <- genres |> filter(Movie.Name%in%cluster10_names)
-cluster10_counts <- cluster10 |> group_by(Genre) |> summarize(n = n())
-```
-
-
+I got help from Jon and jordan for the probabilities and cloud part. I hadn't added cloud in the original file.
